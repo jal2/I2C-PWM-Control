@@ -6,7 +6,8 @@ PWM source based on an ATtiny85.
 I need this to control the backlight of a Lenovo Thinkpad L430 - with some hardware mods in the L430 itself.
 
 Call
-```	make help
+```
+	make help
 ```
 to see all the make targets for building and flashing.
 

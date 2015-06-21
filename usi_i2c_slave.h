@@ -17,35 +17,15 @@
 #ifndef USI_I2C_SLAVE_H
 #define USI_I2C_SLAVE_H
 
+#include <stdint.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-//Microcontroller Dependent Definitions
-#if defined (__AVR_ATtiny24__) | \
-	defined (__AVR_ATtiny44__) | \
-	defined (__AVR_ATtiny84__)
-	#define DDR_USI			DDRA
-	#define PORT_USI		PORTA
-	#define PIN_USI			PINA
-	#define PORT_USI_SDA	PA6
-	#define PORT_USI_SCL	PA4
-	#define PIN_USI_SDA		PINA6
-	#define PIN_USI_SCL		PINA4
-#endif
-
-#if defined(__AVR_AT90Tiny2313__) | \
-	defined(__AVR_ATtiny2313__)
-    #define DDR_USI             DDRB
-    #define PORT_USI            PORTB
-    #define PIN_USI             PINB
-    #define PORT_USI_SDA        PB5
-    #define PORT_USI_SCL        PB7
-    #define PIN_USI_SDA         PINB5
-    #define PIN_USI_SCL         PINB7
-#endif
-
 //USI I2C Initialize
-//  address - If slave, this parameter is the slave address
-void USI_I2C_Init(char address);
+//  address - the slave address (8 bit)
+void USI_I2C_Slave_Init(char address);
+
+#define USI_SLAVE_REGISTER_COUNT 8
+extern volatile uint8_t* USI_Slave_register_buffer[USI_SLAVE_REGISTER_COUNT];
 
 #endif

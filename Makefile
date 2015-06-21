@@ -27,4 +27,10 @@ flash: all
 fuse:
 	$(AVRDUDE) $(FUSES)
 
-.PHONY: clean flash fuse all
+help:
+	@echo "make all - build the hex file"
+	@echo "make clean - remove all generated files"
+	@echo "make flash - build hex file and flash it with an USBasp into a ATtiny85"
+	@echo "make fuse - program the fuses of an ATtiny85 with an USBasp"
+
+.PHONY: clean flash fuse all help

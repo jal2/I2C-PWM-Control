@@ -25,6 +25,7 @@ a new PWM value is set.
 Fuses
 -----
 The ATtiny shall run at 8MHz in order to have some margin for 100 or even 400kHz i2c operation.
+You may need to use 5V for initial programming of the fuses (or use the -B option of avrdude).
 
 Connect USBASP 10pin to the ATtiny85
 ------------------------------------

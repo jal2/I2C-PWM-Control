@@ -3,7 +3,7 @@ MCU = attiny85 # if you change here, adapt the AVRDUDE -p argument below as well
 F_CPU = 8000000 # freq in Hz - we need to run at 8Mhz for 400kHz operation on twi bus
 SOURCES = main.c usi_i2c_slave.c
 CFLAGS += -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Os
-AVRDUDE = avrdude -c usbasp -p t85 -u
+AVRDUDE = avrdude -c usbasp-clone -p t85 -u
 
 # calculated on http://www.engbedded.com/fusecalc/
 # internal  Osc 8MHz, no divider, serial program downloading enabled

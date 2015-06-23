@@ -1,5 +1,10 @@
+/*! \file
+  This file implements a simple i2c to pwm converter.
+  Initial state is 0% duty cycle for the PWM (on PWM_PIN).
+  You send a single byte where 255 is the maximum duty cycle.
 
-//#include <stdlib.h>
+  copyright (c) 2015 Joerg Albert <jal2@gmx.de>
+*/
 #include <stdbool.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -29,8 +34,8 @@
 # error "F_CPU undefined"
 #endif
 
-volatile static uint8_t new_pwm_level;
-static uint8_t pwm_level;
+volatile static uint8_t new_pwm_level; /*!< new pwm duty cycle set in the IRQ handler */
+static uint8_t pwm_level; /*!< last pwm duty cycle seen in the main loop */
 uint8_t led_on; /* if > 0 the LED is on */
 
 static void init_pwm(void)
@@ -62,17 +67,41 @@ static inline set_pwm(uint8_t lvl)
 	OCR0B = lvl;
 }
 
+/*! procedure called for a i2c master read access.
+
+Be aware that it is called in IRQ context, so be fast here!
+
+\param index the number of the data byte requested, starting with 0
+\return data byte to be passed to the i2c master
+ */
+static uint8_t master_read(uint8_t index)
+{
+	return new_pwm_level;
+}
+
+/*! procedure called for a i2c master write access.
+
+Be aware that it is called in IRQ context, so be fast here!
+
+\param data the data byte
+\param index the number of the data byte in the current master write access
+\return true if we will assert ACK on the i2c bus after the next data byte written by the master
+ */
+static bool master_write(uint8_t data, uint8_t index)
+{
+	new_pwm_level = data;
+	return false;
+}
+
 int main(void)
 {
 	int i;
 
-	for(i=0; i < USI_SLAVE_REGISTER_COUNT; i++)
-		USI_Slave_register_buffer[i] = &new_pwm_level;
-	USI_I2C_Slave_Init(SLAVE_ADDR);
+	USI_I2C_Slave_Init(SLAVE_ADDR, master_read, master_write);
 
 	while (1) {
 		if (pwm_level != new_pwm_level) {
-			/* level was set by a write from twi master */
+			/* a new level was set by a write from twi master */
 			pwm_level = new_pwm_level;
 			set_led(true);
 			set_pwm(pwm_level);

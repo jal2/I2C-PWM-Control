@@ -1,19 +1,34 @@
-/*-----------------------------------------------------*\
-|  USI I2C Slave Driver                                 |
-|                                                       |
-| This library provides a robust, interrupt-driven I2C  |
-| slave implementation built on the ATTiny Universal    |
-| Serial Interface (USI) hardware.  Slave operation is  |
-| implemented as a register bank, where each 'register' |
-| is a pointer to an 8-bit variable in the main code.   |
-| This was chosen to make I2C integration transparent   |
-| to the mainline code and making I2C reads simple.     |
-| This library also works well with the Linux I2C-Tools |
-| utilities i2cdetect, i2cget, i2cset, and i2cdump.     |
-|                                                       |
-| Adam Honse (GitHub: CalcProgrammer1) - 7/29/2012      |
-|            -calcprogrammer1@gmail.com                 |
-\*-----------------------------------------------------*/
+/*! \file
+
+USI I2C Slave Driver
+
+copyright (c) 2015 Joerg Albert <jal2@gmx.de>
+
+This implementation is based on the one from
+Adam Honse (https://github.com/CalcProgrammer1/Stepper-Motor-Controller)
+but uses function pointer to process and generate the
+data received/transmitted. This make the i2c communication shorter for simple
+devices, e.g. our i2c2pwm converter, which needs a single byte only.
+
+Furthermore this code uses an 8bit slave address during initialisation.
+
+	DESCRIPTION:
+
+	Call for initialisation
+
+		USI_I2C_Slave_Init(slave_addr, read_proc, write_proc)
+
+	where
+		slave_addr - the TWI slave address (8 bit)
+		read_proc - gets called on every read access from the master; the signature is
+		            uint8_t read_proc(uint8_t index)
+			    where index is the number of the data byte in the current read access
+		write_proc - gets called on every write access from the master; the signature is
+			   bool write_proc(uint8_t data, uint8_t index)
+			   where index is the number of the data byte in the current write access
+			   and data is the byte just written by the master
+			   This procedure returns false if the slave shall assert NAK immediately
+*/
 
 #include <stdbool.h>
 
@@ -66,21 +81,15 @@
 # error "unsupported MCU -please add defines"
 #endif
 
-char usi_i2c_slave_internal_address;
-char usi_i2c_slave_address;
-char usi_i2c_mode;
+static unsigned char i2c_slave_address; /*!< the i2c slave address we acted upon, 8 bit */
+static ReadProc_t read_proc;
+static WriteProc_t write_proc;
+static unsigned char byte_nr; /*!< count the number of bytes received or sent (excl. the device address) during the current access */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ////USI Slave States///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-// The I2C register file is stored as an array of pointers, point these to whatever your I2C registers
-// need to read/write in your code.  This abstracts the buffer and makes it easier to write directly
-// to values in your code.
-volatile uint8_t* USI_Slave_register_buffer[USI_SLAVE_REGISTER_COUNT];
-uint8_t  USI_Slave_internal_address = 0;
-bool  USI_Slave_internal_address_set = false;
 
 enum
 {
@@ -119,12 +128,14 @@ enum
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void USI_I2C_Slave_Init(char address)
+void USI_I2C_Slave_Init(uint8_t address, ReadProc_t rproc, WriteProc_t wproc)
 {
 	PORT_USI &= ~(1 << PORT_USI_SCL);
 	PORT_USI &= ~(1 << PORT_USI_SDA);
 
-	usi_i2c_slave_address = address;
+	i2c_slave_address = address;
+	read_proc = rproc;
+	write_proc = wproc;
 
 	USI_SET_BOTH_INPUT();
 	
@@ -199,7 +210,7 @@ ISR(USI_OVERFLOW_VECTOR)
 		/////////////////////////////////////////////////////////////////////////
 		case USI_SLAVE_CHECK_ADDRESS:
 
-			if((USIDR == 0) || ((USIDR >> 1) == usi_i2c_slave_address))
+			if((USIDR == 0) || ((USIDR & ~1) == i2c_slave_address))
 			{				
 				if (USIDR & 0x01)
 				{
@@ -207,7 +218,7 @@ ISR(USI_OVERFLOW_VECTOR)
 				}
 				else
 				{
-					USI_Slave_internal_address_set = false;
+					byte_nr=0;
 					USI_I2C_Slave_State = USI_SLAVE_RECV_DATA_WAIT;
 				}
 
@@ -270,16 +281,8 @@ ISR(USI_OVERFLOW_VECTOR)
 		/////////////////////////////////////////////////////////////////////////
 		case USI_SLAVE_SEND_DATA:
 
-			if(USI_Slave_internal_address < USI_SLAVE_REGISTER_COUNT)
-			{
-				USIDR = *(USI_Slave_register_buffer[USI_Slave_internal_address]);
-			}
-			else
-			{
-				USIDR = 0x00;
-			}
-			USI_Slave_internal_address++;
-
+			USIDR = (*read_proc)(byte_nr++);
+	
 			USI_I2C_Slave_State = USI_SLAVE_SEND_DATA_ACK_WAIT;
 
 			//To send data, DDR for SDA must be 1 (Output) and PORT for SDA
@@ -313,18 +316,14 @@ ISR(USI_OVERFLOW_VECTOR)
 
 			USI_I2C_Slave_State = USI_SLAVE_RECV_DATA_WAIT;
 			
-			if (!USI_Slave_internal_address_set)
-			{
-				USI_Slave_internal_address = USIDR;
-				USI_Slave_internal_address_set = true;
+			if ((*write_proc)(USIDR, byte_nr++)) {
+				/* write an ACK */
+				USIDR = 0;
+				USI_SET_SDA_OUTPUT();
+			} else {
+				/* NAK to the master */
+				USI_SET_SDA_INPUT();
 			}
-			else if (USI_Slave_internal_address < USI_SLAVE_REGISTER_COUNT)
-			{
-				*(USI_Slave_register_buffer[USI_Slave_internal_address]) = USIDR;
-			}
-			
-			USIDR = 0;
-			USI_SET_SDA_OUTPUT();
 			USISR = USI_SLAVE_COUNT_ACK_USISR;
 			break;
 	}

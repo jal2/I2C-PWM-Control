@@ -120,10 +120,6 @@ enum
 #define USI_SET_SDA_OUTPUT()	{ DDR_USI |=  (1 << PORT_USI_SDA); }
 #define USI_SET_SDA_INPUT() 	{ DDR_USI &= ~(1 << PORT_USI_SDA); }
 
-#define USI_SET_SCL_OUTPUT()	{ DDR_USI |=  (1 << PORT_USI_SCL); }
-#define USI_SET_SCL_INPUT() 	{ DDR_USI &= ~(1 << PORT_USI_SCL); }
-
-#define USI_SET_BOTH_OUTPUT()	{ DDR_USI |= (1 << PORT_USI_SDA) | (1 << PORT_USI_SCL); }
 #define USI_SET_BOTH_INPUT() 	{ DDR_USI &= ~((1 << PORT_USI_SDA) | (1 << PORT_USI_SCL)); }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -224,6 +220,7 @@ ISR(USI_OVERFLOW_VECTOR)
 
 				//Set USI to send ACK
 				USIDR = 0;
+				PORT_USI |= (1 << PORT_USI_SDA);
 				USI_SET_SDA_OUTPUT();
 				USISR = USI_SLAVE_COUNT_ACK_USISR;
 			}
@@ -287,8 +284,8 @@ ISR(USI_OVERFLOW_VECTOR)
 
 			//To send data, DDR for SDA must be 1 (Output) and PORT for SDA
 			//must also be 1 (line drives low on USIDR MSB = 0 or PORT = 0)
-			USI_SET_SDA_OUTPUT();
 			PORT_USI |= (1 << PORT_USI_SDA);
+			USI_SET_SDA_OUTPUT();
 			USISR = USI_SLAVE_COUNT_BYTE_USISR;
 			break;
 
@@ -319,6 +316,7 @@ ISR(USI_OVERFLOW_VECTOR)
 			if ((*write_proc)(USIDR, byte_nr++)) {
 				/* write an ACK */
 				USIDR = 0;
+				PORT_USI |= (1 << PORT_USI_SDA);
 				USI_SET_SDA_OUTPUT();
 			} else {
 				/* NAK to the master */

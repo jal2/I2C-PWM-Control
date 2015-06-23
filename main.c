@@ -46,7 +46,16 @@ static void init_pwm(void)
 	OCR0B = 0;          // off at init
 }
 
-/* set LED on/off
+/*! init LED */
+static void init_led(void)
+{
+	/* led off */
+	PORTB &= ~(1<<LED_PIN);
+	/* output */
+	DDRB |= (1<<LED_PIN);
+}
+
+/*! set LED on/off
 
    LED on == pin high, i.e. connect LED to ground.
 */
@@ -97,7 +106,13 @@ int main(void)
 {
 	int i;
 
+	cli();
+
 	USI_I2C_Slave_Init(SLAVE_ADDR, master_read, master_write);
+	init_pwm();
+	init_led();
+
+	sei();
 
 	while (1) {
 		if (pwm_level != new_pwm_level) {

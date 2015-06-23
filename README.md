@@ -31,12 +31,12 @@ Connect USBASP 10pin to the ATtiny85
 ------------------------------------
 ```
 	USBASP		ATtiny25/45/85
-MOSI	1		5
-MISO	9		6
-/RES	5		1
-SCK	7		7
-Vcc	2		8
-GND	4,6,8,10	4
+MOSI    1		5
+MISO    9		6
+/RES    5		1
+SCK     7		7
+Vcc     2		8
+GND     4,6,8,10	4
 ```
 Be sure to jumper the USBASP for the correct voltage (5 or 3.3V) if you supply
 the ATtiny from some other external device.

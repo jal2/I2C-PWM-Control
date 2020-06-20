@@ -14,9 +14,9 @@ to see all the make targets for building and flashing.
 Pin Configuration
 -----------------
 ```
-   PB0 - SDA (DIL: pin 7)
+   PB0 - SDA (DIL: pin 5)
    PB1 - PWM (OC0B) (DIL: pin 6)
-   PB2 - SCL (DIL: pin 5)
+   PB2 - SCL (DIL: pin 7)
    PB3 - LED (DIL: pin 2)
 ```
 The LED must be connected via a resistor to ground and will light for approx. two seconds each time
@@ -40,4 +40,3 @@ GND     4,6,8,10	4
 ```
 Be sure to jumper the USBASP for the correct voltage (5 or 3.3V) if you supply
 the ATtiny from some other external device.
-

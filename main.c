@@ -15,9 +15,9 @@
 
 #if defined(__AVR_ATtiny85__)
 /* pin config for ATtiny85:
-   PB0 - SDA (DIL: pin 7)
+   PB0 - SDA (DIL: pin 5)
    PB1 - PWM (OC0B) (DIL: pin 6)
-   PB2 - SCL (DIL: pin 5)
+   PB2 - SCL (DIL: pin 7)
    PB3 - LED (DIL: pin 2)
 */
 #define LED_PIN PB3
